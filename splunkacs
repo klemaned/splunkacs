@@ -53,7 +53,7 @@ def command_settings(extra1=None,extra2=None,extra3=None):
 
 def command_configure(extra1=None,extra2=None,extra3=None):
     config = configparser.ConfigParser()
-    print("\nPlease provide the following items to begin using splunkacs:")
+    print("\nPlease provide the following items to begin using splunkacs:\n")
     config['splunkacs'] = {}
     config['splunkacs']['stack'] = input("Splunk Stack Name (https://[stack].splunkcloud.com): ")
     config['splunkacs']['token'] = input("Splunk Authentication Token: ")
@@ -70,7 +70,7 @@ def command_configure(extra1=None,extra2=None,extra3=None):
         with open(CONFIG_FILE, 'w') as config_file: # Write new configuration
             config.write(config_file)
 
-        print("Configuration Saved")
+        print("Configuration Saved\n")
     else:
         print("Failed to verify connection. Configuration NOT saved")
         quit()
