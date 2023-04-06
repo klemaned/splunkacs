@@ -73,7 +73,10 @@ def command_configure(extra1=None,extra2=None,extra3=None):
         print("Configuration Saved\n")
     else:
         print("Failed to verify connection. Configuration NOT saved")
-        quit()
+
+def command_limits():
+    # Interactively build out limits and submit after confirmation
+    pass
 
 def get_config():
     config = configparser.ConfigParser()
@@ -171,12 +174,7 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
 }
 
 
-
-
 # MAIN
-
-if not os.path.exists(CONFIG_FILE):
-    command_configure()
 
 # Get api configuration from config file
 splunk_stack, splunk_token, splunk_url_base, headers = get_config()
@@ -193,7 +191,10 @@ for a in args:
     i+=1
 
 # Validate Command Option
-if args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
+if not os.path.exists(CONFIG_FILE): # Use CONFIG_FILE to determine if this is the first time running splunkacs
+    print("This appears to be your first time running splunkacs.")
+    command_configure()
+elif args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
     if args['arg2'] == 'help': # If second argument is 'help' print the Help for the commmand specified in the first argument
         print_help(args['arg1'])
     else:
