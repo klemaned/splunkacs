@@ -73,6 +73,7 @@ def command_configure(extra1=None,extra2=None,extra3=None):
         print("Configuration Saved")
     else:
         print("Failed to verify connection. Configuration NOT saved")
+        quit()
 
 def get_config():
     config = configparser.ConfigParser()
@@ -176,13 +177,6 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
 
 if not os.path.exists(CONFIG_FILE):
     command_configure()
-
-print("! Right before IF")
-if not os.path.exists(CONFIG_FILE):
-    print("Still no file")
-    quit()
-else:
-    print("Passed for some reason")
 
 # Get api configuration from config file
 splunk_stack, splunk_token, splunk_url_base, headers = get_config()
