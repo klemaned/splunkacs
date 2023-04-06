@@ -11,7 +11,7 @@ import os
 
 CONFIG_FILE='./settings.config'
 
-def command_acl(feature=None,action=None,network=None):
+def command_acl(feature=None,action=None,network=None,extra=None):
     # Command Example: "splunkacs acl search-api add 8.8.8.8/32"
     
     ACL_FEATURE_LIST=['idm-api','idm-ui','hec','s2s','search-api','search-ui'] # Available ACL Features included in Splunk ACS API
@@ -36,7 +36,7 @@ def command_acl(feature=None,action=None,network=None):
     else:
         print_help('acl')
 
-def command_tokens(subcommand=None,action=None,extra=None):
+def command_tokens(subcommand=None,action=None,extra1=None,extra2=None):
     api_endpoint = splunk_url_base+"/adminconfig/v2/tokens"
     if subcommand == "show":
         splunk_get(api_endpoint)
@@ -45,13 +45,13 @@ def command_tokens(subcommand=None,action=None,extra=None):
     else:
         print_help('tokens')
 
-def command_settings(extra1=None,extra2=None,extra3=None):
+def command_settings(extra1=None,extra2=None,extra3=None,extra4=None):
     print("Current Settings:\n")
     print("Splunk Stack : " + splunk_stack)
     print("Bearer Token : " + splunk_token)
     print()
 
-def command_configure(extra1=None,extra2=None,extra3=None):
+def command_configure(extra1=None,extra2=None,extra3=None,extra4=None):
     config = configparser.ConfigParser()
     print("\nPlease provide the following items to begin using splunkacs:\n")
     config['splunkacs'] = {}
@@ -74,9 +74,22 @@ def command_configure(extra1=None,extra2=None,extra3=None):
     else:
         print("Failed to verify connection. Configuration NOT saved")
 
-def command_limits():
+def command_limits(subcommand=None,stanza=None,setting=None,value=None):
     # Interactively build out limits and submit after confirmation
-    pass
+    LIMITS_SETTINGS = {'join':['subsearch_maxout','subsearch_maxtime'],'kv':['maxchars','limit','maxcols']}
+    api_endpoint = splunk_url_base+"/adminconfig/v2/limits"
+    if subcommand == "show":
+        if stanza in LIMITS_SETTINGS.keys():
+            splunk_get(api_endpoint+"/"+stanza)
+        else:
+            splunk_get(api_endpoint)
+
+    elif subcommand == "defaults":
+        splunk_get(api_endpoint+"/defaults")
+    elif subcommand == "set":
+        print("Under Construction")
+    else:
+        print_help('limits')
 
 def get_config():
     config = configparser.ConfigParser()
@@ -170,7 +183,12 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
         'description' : 'Delete current configuraiton and configure new',
         'help'        : 'splunkacs configure',
         'function'    : command_configure,
-    }
+    },
+    'limits' :{
+        'description' : 'Manage the limtis.conf settings of Splunk Cloud',
+        'help'        : 'splunkacs limits (defaults|set|show) <stanza> <setting> <value>\n\ndefaults\tDisplays default limits.conf settings\nset\t\tAllows modification to the limits.conf settings\nshow\t\tDisplays the current limits.conf settings',
+        'function'    : command_limits,
+    },
 }
 
 
@@ -181,7 +199,7 @@ splunk_stack, splunk_token, splunk_url_base, headers = get_config()
 
 # Set all possible argument positions to None and fill from user input
 # This is helpful for a variable number arguments and passing arguments to functions of varying argument requirements
-args={'arg1':None,'arg2':None,'arg3':None,'arg4':None}
+args={'arg1':None,'arg2':None,'arg3':None,'arg4':None,'arg5':None}
 i=1
 for a in args: 
     try:
@@ -199,7 +217,7 @@ elif args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the
         print_help(args['arg1'])
     else:
         # Execute command based on first argument and pass remaining arguments
-        ACS_COMMANDS[args['arg1']]['function'](args['arg2'],args['arg3'],args['arg4'])
+        ACS_COMMANDS[args['arg1']]['function'](args['arg2'],args['arg3'],args['arg4'],args['arg5'])
 else:
     print_help()
 
