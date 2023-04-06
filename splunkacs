@@ -60,7 +60,6 @@ def command_configure(extra1=None,extra2=None,extra3=None):
     print("\nValidating connection...\n")
     
     # Validate configuration by sending GET to tokens endpoint
-    api_endpoint = splunk_url_base+"/adminconfig/v2/tokens"
     r=requests.get('https://admin.splunk.com/'+config['splunkacs']['stack']+'/adminconfig/v2/tokens', headers={'Authorization': 'Bearer '+config['splunkacs']['token']})
     if r.status_code == 200:
         print("Connection Successful")
@@ -177,6 +176,13 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
 
 if not os.path.exists(CONFIG_FILE):
     command_configure()
+
+print("! Right before IF")
+if not os.path.exists(CONFIG_FILE):
+    print("Still no file")
+    quit()
+else:
+    print("Passed for some reason")
 
 # Get api configuration from config file
 splunk_stack, splunk_token, splunk_url_base, headers = get_config()
