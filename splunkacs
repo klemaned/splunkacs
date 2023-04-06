@@ -1,0 +1,204 @@
+#!/usr/bin/python3
+
+# References: https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/
+
+import requests
+import json
+import sys
+import re
+import configparser
+import os
+
+CONFIG_FILE='./settings.config'
+
+def command_acl(feature=None,action=None,network=None):
+    # Command Example: "splunkacs acl search-api add 8.8.8.8/32"
+    
+    ACL_FEATURE_LIST=['idm-api','idm-ui','hec','s2s','search-api','search-ui'] # Available ACL Features included in Splunk ACS API
+    
+    if feature in ACL_FEATURE_LIST: # check if feature input is valid
+        api_endpoint = splunk_url_base+"/adminconfig/v2/access/"+feature+"/ipallowlists"
+        if action == "show":
+            splunk_get(api_endpoint)
+        elif action == "add" or action == "remove":
+            if check_network(network): # Is network valid cidr notation
+                network_array=[] # Convert Network to List is required for Splunk API
+                network_array.append(network)
+                post_data={'subnets': network_array} # Prepare data as dictionary for Splunk API
+                if action == "add":
+                    splunk_post(api_endpoint,post_data)
+                elif action == "remove":
+                    splunk_delete(api_endpoint,post_data)
+            else:
+                print_help("acl","Error: Improperly Formatted CIDR Network. Example: 8.8.8.8/32")
+        else:
+            print_help('acl')
+    else:
+        print_help('acl')
+
+def command_tokens(subcommand=None,action=None,extra=None):
+    api_endpoint = splunk_url_base+"/adminconfig/v2/tokens"
+    if subcommand == "show":
+        splunk_get(api_endpoint)
+    elif subcommand == "add" or subcommand == "remove":
+        print("Add and Remove are not currently supported. Manage Authentication tokens within the Splunk Cloud web interface.")
+    else:
+        print_help('tokens')
+
+def command_settings(extra1=None,extra2=None,extra3=None):
+    print("Current Settings:\n")
+    print("Splunk Stack : " + splunk_stack)
+    print("Bearer Token : " + splunk_token)
+    print()
+
+def command_configure(extra1=None,extra2=None,extra3=None):
+    config = configparser.ConfigParser()
+    print("\nPlease provide the following items to begin using splunkacs:")
+    config['splunkacs'] = {}
+    config['splunkacs']['stack'] = input("Splunk Stack Name (https://[stack].splunkcloud.com): ")
+    config['splunkacs']['token'] = input("Splunk Authentication Token: ")
+    print("\nValidating connection...\n")
+    
+    # Validate configuration by sending GET to tokens endpoint
+    api_endpoint = splunk_url_base+"/adminconfig/v2/tokens"
+    r=requests.get('https://admin.splunk.com/'+config['splunkacs']['stack']+'/adminconfig/v2/tokens', headers={'Authorization': 'Bearer '+config['splunkacs']['token']})
+    if r.status_code == 200:
+        print("Connection Successful")
+        
+        if os.path.exists(CONFIG_FILE): # If a config file already exists rename .old
+            os.rename(CONFIG_FILE,CONFIG_FILE+".old")
+        
+        with open(CONFIG_FILE, 'w') as config_file: # Write new configuration
+            config.write(config_file)
+
+        print("Configuration Saved")
+    else:
+        print("Failed to verify connection. Configuration NOT saved")
+
+def get_config():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    splunk_stack = config['splunkacs']['stack']
+    splunk_token = config['splunkacs']['token']
+    splunk_url_base = "https://admin.splunk.com/"+splunk_stack
+    headers = {
+        'Authorization': 'Bearer '+splunk_token,
+        'Content-Type': 'application/json'
+    }
+
+
+    return splunk_stack, splunk_token, splunk_url_base, headers
+
+def print_help(command=None, message=None):
+    if not message == None:
+        print(message+"\n")
+    
+    if command == None:
+        print("A Command for managing the Splunk Cloud Admin Config Service (ACS)\n")
+        print("Format:")
+        print("splunkacs [command] <help>\n\nCommands:")
+        for c in sorted(ACS_COMMANDS):
+            tab_max = 3                         # Set tabs to format the output. A max_tab=3 should be able to hand up to 24 character values
+            tab_set = tab_max-(int(len(c)/8))   # Tabs are applied at 8 characters
+            tab_str = "\t"*tab_set              # For example print("1234567\tZ") results in "1234567 Z" and print("12345678\tZ") results in "12345678        Z"
+            print(c+tab_str+ACS_COMMANDS[c]["description"]+" ")
+    else:
+        print("Command: "+command)
+        print("Description: "+ACS_COMMANDS[command]["description"]+"\n")
+        print("Format:")
+        print(ACS_COMMANDS[command]["help"])
+    print()
+
+def print_json(json_text):
+    json_object = json.loads(json_text)
+    json_formatted = json.dumps(json_object, indent=2)
+    print(json_formatted)
+
+def splunk_get(u=None,d=None):
+    r = requests.get(u, headers=headers)
+    print_json(r.text)
+
+def splunk_post(u=None,d=None):
+
+    json_data=json.dumps(d)
+    r = requests.post(u, data=json_data, headers=headers)
+    print_json(r.text)
+
+def splunk_delete(u=None,d=None):
+    json_data=json.dumps(d)
+    r = requests.delete(u, data=json_data, headers=headers)
+    print_json(r.text)
+
+def check_network(network):
+    RE_NETWORK_PATTERN=re.compile("(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})")
+    if RE_NETWORK_PATTERN.fullmatch(network):
+        re_network_match=RE_NETWORK_PATTERN.fullmatch(network)
+        i = 1
+        while i <= 4:
+            if int(re_network_match[i]) > 255:
+                return None
+            i += 1
+        if int(re_network_match[5]) > 32:
+            return None
+        else:
+            return "match"
+        
+    else:
+        return None
+
+ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the function names can be included in the dictionary to allow for dynamic execution according to user input
+    'acl' : {
+        'description' : 'Manage Splunk Cloud IP access-lists',
+        'help'        : 'splunkacs acl [feature] (show|add|remove) <cidr network>\n\nSplunk ACL Features:\nidm-api, idm-ui, hec, s2s, search-api, search-ui',
+        'function'    : command_acl,
+
+    },
+    'tokens' : {
+        'description' : 'Manage Splunk Cloud Authentication Tokens',
+        'help'        : 'splunkacs tokens (show|add|remove)',
+        'function'    : command_tokens,
+    },
+    'settings' : {
+        'description' : 'Print current api settings',
+        'help'        : 'splunkacs settings',
+        'function'    : command_settings,
+    },
+    'configure' : {
+        'description' : 'Delete current configuraiton and configure new',
+        'help'        : 'splunkacs configure',
+        'function'    : command_configure,
+    }
+}
+
+
+
+
+# MAIN
+
+if not os.path.exists(CONFIG_FILE):
+    command_configure()
+
+# Get api configuration from config file
+splunk_stack, splunk_token, splunk_url_base, headers = get_config()
+
+# Set all possible argument positions to None and fill from user input
+# This is helpful for a variable number arguments and passing arguments to functions of varying argument requirements
+args={'arg1':None,'arg2':None,'arg3':None,'arg4':None}
+i=1
+for a in args: 
+    try:
+        args[a]=sys.argv[i]
+    except:
+        args[a]=None
+    i+=1
+
+# Validate Command Option
+if args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
+    if args['arg2'] == 'help': # If second argument is 'help' print the Help for the commmand specified in the first argument
+        print_help(args['arg1'])
+    else:
+        # Execute command based on first argument and pass remaining arguments
+        ACS_COMMANDS[args['arg1']]['function'](args['arg2'],args['arg3'],args['arg4'])
+else:
+    print_help()
+
