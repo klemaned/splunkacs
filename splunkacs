@@ -91,9 +91,9 @@ def command_limits(subcommand=None,stanza=None,setting=None,value=None):
     elif subcommand == "set":
         if stanza in LIMITS_SETTINGS.keys():
             if setting in LIMITS_SETTINGS[stanza]:
-                post_data = {'settings':{setting:value}}
+                post_data = {'settings':{setting:int(value)}}
                 print(post_data)
-                #splunk_post(api_endpoint+"/"+stanza,post_data)
+                #splunk_post(api_endpoint,post_data)
             else:
                 print("Setting Does NOT Match")
         else:
