@@ -92,8 +92,8 @@ def command_limits(subcommand=None,stanza=None,setting=None,value=None):
         if stanza in LIMITS_SETTINGS.keys():
             if setting in LIMITS_SETTINGS[stanza]:
                 post_data = {'settings':{setting:int(value)}}
-                print(post_data)
-                #splunk_post(api_endpoint,post_data)
+                splunk_post(api_endpoint,post_data)
+                # take away json ouput from splunk_get|post|delete and return request object???
             else:
                 print("Setting Does NOT Match")
         else:
