@@ -77,12 +77,14 @@ def command_configure(extra1=None,extra2=None,extra3=None,extra4=None):
 def command_limits(subcommand=None,stanza=None,setting=None,value=None):
     # Interactively build out limits and submit after confirmation
     LIMITS_SETTINGS = {'join':['subsearch_maxout','subsearch_maxtime'],'kv':['maxchars','limit','maxcols']}
-    api_endpoint = splunk_url_base+"/adminconfig/v2/limits"
+    
+    if stanza in LIMITS_SETTINGS.keys():
+        api_endpoint = splunk_url_base+"/adminconfig/v2/limits/"+stanza
+    else:
+        api_endpoint = splunk_url_base+"/adminconfig/v2/limits"
+ 
     if subcommand == "show":
-        if stanza in LIMITS_SETTINGS.keys():
-            splunk_get(api_endpoint+"/"+stanza)
-        else:
-            splunk_get(api_endpoint)
+        splunk_get(api_endpoint)
 
     elif subcommand == "defaults":
         splunk_get(api_endpoint+"/defaults")
