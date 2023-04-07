@@ -87,7 +87,15 @@ def command_limits(subcommand=None,stanza=None,setting=None,value=None):
     elif subcommand == "defaults":
         splunk_get(api_endpoint+"/defaults")
     elif subcommand == "set":
-        print("Under Construction")
+        if stanza in LIMITS_SETTINGS.keys():
+            if setting in LIMITS_SETTINGS[stanza]:
+                post_data = {'settings':{setting:value}}
+                print(post_data)
+                #splunk_post(api_endpoint+"/"+stanza,post_data)
+            else:
+                print("Setting Does NOT Match")
+        else:
+            print_help('limits',"Unknown Stanza \'"+stanza+"\'")
     else:
         print_help('limits')
 
@@ -186,7 +194,7 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
     },
     'limits' :{
         'description' : 'Manage the limtis.conf settings of Splunk Cloud',
-        'help'        : 'splunkacs limits (defaults|set|show) <stanza> <setting> <value>\n\ndefaults\tDisplays default limits.conf settings\nset\t\tAllows modification to the limits.conf settings\nshow\t\tDisplays the current limits.conf settings',
+        'help'        : 'splunkacs limits (defaults|set|show) <stanza> <setting> <value>\n\ndefaults\tDisplays default limits.conf settings\nset\t\tModify the Splunk Cloud limits. Requires a Stanza, Setting, and Value\nshow\t\tDisplays the current limits.conf settings\n\nFor information on Stanzas and Settings run \'splunkacs limits defaults\' or go to https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits',
         'function'    : command_limits,
     },
 }
