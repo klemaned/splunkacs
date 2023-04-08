@@ -195,7 +195,7 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
 
     },
     'tokens' : {
-        'description' : 'Manage Splunk Cloud Authentication Tokens',
+        'description' : 'View active Splunk Cloud Authentication Tokens',
         'help'        : 'splunkacs tokens (show)',
         'function'    : command_tokens,
     },
