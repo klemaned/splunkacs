@@ -17,7 +17,6 @@ For the Authentication Token, using the Splunk Cloud web portal, you will need t
 
 # Commands
 Functionality yet to be included:
-- [ ] View maintenance windows
 - [ ] Splunk restarts
 - [ ] Outbound Ports
 
