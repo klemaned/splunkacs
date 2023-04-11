@@ -2,21 +2,13 @@
 
 # References: https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/
 
-"""
-Functionality is focused on the activities that you cannot perform within the web console such as Access Lists and Splunk Limits
-Functions to include
-- View maintenance windows
-- Splunk restarts
-- Outbound Ports
-
-"""
-
 import requests
 import json
 import sys
 import re
 import configparser
 import os
+import datetime
 
 CONFIG_FILE='./settings.config'
 
@@ -116,6 +108,29 @@ def command_limits(subcommand=None,stanza=None,setting=None,value=None):
     else:
         print_help('limits')
 
+def command_maintenance(subcommand=None,from_time=None,to_time=None,extra1=None):
+    RE_DATE_PATTERN = re.compile("\d{4}-\d{2}-\d{2}") # Match pattern YYYY-MM-DD. Date validation happens at api
+
+    if subcommand == "show":
+        if from_time == None:
+            api_endpoint = splunk_url_base+"/adminconfig/v2/maintenance-windows/schedules" # Not providing a fromTime and toTime should result in a window of +-30days
+        else:
+            if RE_DATE_PATTERN.match(from_time): # is from_time in proper YYYY-MM-DD format
+                if to_time == None:
+                    to_time = str(datetime.date.today()) # set to_time to today if not specified
+                else:
+                    if not RE_DATE_PATTERN.match(to_time): # if provided to_time isn't in proper format, print error and help
+                        print_help("maintenance",to_time+" does not mach Date Pattern YYYY-DD-MM")
+                        return
+                api_endpoint = splunk_url_base+"/adminconfig/v2/maintenance-windows/schedules?fromTime="+from_time+"&toTime="+to_time
+            else:
+                print_help("maintenance",from_time+" does not mach Date Pattern YYYY-DD-MM")
+                return
+        splunk_get(api_endpoint)
+        
+    else:
+        print_help("maintenance")
+            
 def get_config():
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
@@ -132,7 +147,7 @@ def get_config():
 
 def print_help(command=None, message=None):
     if not message == None:
-        print(message+"\n")
+        print("Error: "+message+"\n")
     
     if command == None:
         print("A Command for managing the Splunk Cloud Admin Config Service (ACS)\n")
@@ -214,35 +229,40 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
         'help'        : 'splunkacs limits (defaults|set|show) <stanza> <setting> <value>\n\ndefaults\tDisplays default limits.conf settings\nset\t\tModify the Splunk Cloud limits. Requires a Stanza, Setting, and Value\nshow\t\tDisplays the current limits.conf settings\n\nFor information on Stanzas and Settings run \'splunkacs limits defaults\' or go to https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits',
         'function'    : command_limits,
     },
+    'maintenance' :{
+        'description' : 'View previous and upcoming maintance windows',
+        'help'        : 'splunkacs maintenance (show) <From Date> <To Date>\n\nDate Format: YYYY-MM-DD',
+        'function'    : command_maintenance,
+    },
 }
 
+splunk_stack, splunk_token, splunk_url_base, headers = get_config() # Get api configuration from config file
 
-# MAIN
+def main():
+    # Set all possible argument positions to None and fill from user input
+    # This is helpful for a variable number arguments and passing arguments to functions of varying argument requirements. However, I'm sure theres a better way of doing this. 
+    args={'arg1':None,'arg2':None,'arg3':None,'arg4':None,'arg5':None}
+    i=1
+    for a in args: 
+        try:
+            args[a]=sys.argv[i]
+        except:
+            args[a]=None
+        i+=1
 
-# Get api configuration from config file
-splunk_stack, splunk_token, splunk_url_base, headers = get_config()
-
-# Set all possible argument positions to None and fill from user input
-# This is helpful for a variable number arguments and passing arguments to functions of varying argument requirements
-args={'arg1':None,'arg2':None,'arg3':None,'arg4':None,'arg5':None}
-i=1
-for a in args: 
-    try:
-        args[a]=sys.argv[i]
-    except:
-        args[a]=None
-    i+=1
-
-# Validate Command Option
-if not os.path.exists(CONFIG_FILE): # Use CONFIG_FILE to determine if this is the first time running splunkacs
-    print("This appears to be your first time running splunkacs.")
-    command_configure()
-elif args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
-    if args['arg2'] == 'help': # If second argument is 'help' print the Help for the commmand specified in the first argument
-        print_help(args['arg1'])
+    # Validate Command Option
+    if not os.path.exists(CONFIG_FILE): # Use CONFIG_FILE to determine if this is the first time running splunkacs
+        print("This appears to be your first time running splunkacs.")
+        command_configure()
+    elif args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
+        if args['arg2'] == 'help': # If second argument is 'help' print the Help for the commmand specified in the first argument
+            print_help(args['arg1'])
+        else:
+            # Execute command based on first argument and pass remaining arguments
+            ACS_COMMANDS[args['arg1']]['function'](args['arg2'],args['arg3'],args['arg4'],args['arg5'])
     else:
-        # Execute command based on first argument and pass remaining arguments
-        ACS_COMMANDS[args['arg1']]['function'](args['arg2'],args['arg3'],args['arg4'],args['arg5'])
-else:
-    print_help()
+        print_help()
+
+if __name__ == '__main__':
+    main()
 

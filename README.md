@@ -144,8 +144,79 @@ $ ./splunkacs limits set pdf max_rows_per_table 2000
 ```
 A list of available Stanzas and Settings can be found [here](https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits)
 
+## Maintenance
+The `maintenance` command displays previous and upcoming maintenace for a given period of time.
+> If no "From Date" is provided, the command will default to a window of +-30 days. If a "From Date" is provided but no "To Date" is given, the "To Date" will be set to today's date.
+
+```
+$ ./splunkacs maintenance help
+
+Command: maintenance
+Description: View previous and upcoming maintance windows
+
+Format:
+splunkacs maintenance (show) <From Date> <To Date>
+
+Date Format: YYYY-MM-DD
+```
+
+### Example Uses:
+#### Show Maintenance during default +-30 day window
+```
+$ ./splunkacs maintenance show
+
+{
+  "nextLink": "",
+  "schedules": []
+}
+```
+> There are no scheduled maintenance for the default window
+
+
+#### Show Maintenance from 2023-01-01 to 2023-04-10 
+```
+$ ./splunkacs maintenance show 2023-01-01 2023-04-10
+
+{
+  "nextLink": "",
+  "schedules": [
+    {
+      "duration": "3h0m0s",
+      "lastModifiedTimestamp": "2023-03-11T02:07:54.485060828Z",
+      "lastSummary": "",
+      "mwType": "Service Update",
+      "operations": [
+        {
+          "operationDescription": "Splunk version upgrade to latest/stable release",
+          "operationStatus": "Success",
+          "operationType": "Splunk Upgrade",
+          "targetVersion": "9.0.2209.4"
+        },
+        {
+          "SFDCTickets": [
+            "1"
+          ],
+          "notes": [
+            "8"
+          ],
+          "operationDescription": "Rightsize Stack",
+          "operationStatus": "Success",
+          "operationType": "Repaver",
+          "targetVersion": "m6i.4xlarge"
+        }
+      ],
+      "requestedEntity": "Splunk",
+      "scheduleId": "56fb3ca2-88c5-4f4e-8b7e-45821a38a2ce",
+      "scheduleStartTimestamp": "2023-03-10T04:00:00Z",
+      "status": "Completed"
+    }
+  ]
+}
+```
+
+
 ## Tokens
-The `tokens` command allow an admin to view all configured authentication tokens. The command does not enable an admin to view the actual tokens, only the tokens properties.
+The `tokens` command allows an admin to view all configured authentication tokens. The command does not enable an admin to view the actual tokens, only the tokens properties.
 > Creating and Deleting tokens is not currently supported by splunkacs. Use the Splunk web portal for token management.
 ```
 $ ./splunkacs tokens help
