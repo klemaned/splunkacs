@@ -284,7 +284,7 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
     },
 }
 
-splunk_stack, splunk_token, splunk_url_base, headers = get_config() # Get api configuration from config file
+
 
 def main():
     # Set all possible argument positions to None and fill from user input
@@ -303,6 +303,8 @@ def main():
         print("This appears to be your first time running splunkacs.")
         command_configure()
     elif args['arg1'] in ACS_COMMANDS.keys(): # The first argument is considered the COMMAND argument and determines which function to execute. If the first argument is not a know command then there is nothing to run.
+        global splunk_stack, splunk_token, splunk_url_base, headers
+        splunk_stack, splunk_token, splunk_url_base, headers = get_config() # Get api configuration from config file
         if args['arg2'] == 'help': # If second argument is 'help' print the Help for the commmand specified in the first argument
             print_help(args['arg1'])
         else:
