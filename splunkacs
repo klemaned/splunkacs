@@ -12,7 +12,7 @@ import datetime
 
 CONFIG_FILE='./settings.config'
 
-def command_acl(feature=None,action=None,network=None,extra=None):
+def command_inbound_acl(action=None,feature=None,network=None,extra=None):
     # Reference: https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ConfigureIPAllowList
     
     ACL_FEATURE_LIST=['idm-api','idm-ui','hec','s2s','search-api','search-ui'] # Available ACL Features included in Splunk ACS API
@@ -23,23 +23,55 @@ def command_acl(feature=None,action=None,network=None,extra=None):
             splunk_get(api_endpoint)
         elif action == "add" or action == "remove":
             if check_network(network): # Is network valid cidr notation
-                network_array=[] # Convert Network to List is required for Splunk API
-                network_array.append(network)
-                post_data={'subnets': network_array} # Prepare data as dictionary for Splunk API
+                network_list=[] # Convert Network to List is required for Splunk API
+                network_list.append(network)
+                post_data={'subnets': network_list} # Prepare data as dictionary for Splunk API
                 if action == "add":
                     splunk_post(api_endpoint,post_data)
                 elif action == "remove":
                     splunk_delete(api_endpoint,post_data)
             else:
-                print_help("acl","Error: Improperly Formatted CIDR Network. Example: 8.8.8.8/32")
+                print_help("inbound-acl","Improperly Formatted CIDR Network. Example: 8.8.8.8/32")
         else:
-            print_help('acl')
+            print_help('inbound-acl')
     else:
-        print_help('acl')
+        print_help('inbound-acl')
+
+def command_outbound_acl(action=None,port=None,network=None,extra=None):
+    if action == 'show':
+        if port:
+            api_endpoint = splunk_url_base+"/adminconfig/v2/access/outbound-ports/"+port
+        else:
+            api_endpoint = splunk_url_base+"/adminconfig/v2/access/outbound-ports"
+        splunk_get(api_endpoint)
+    elif action == 'add' or action == 'remove':
+        if port == None or network == None:
+            print_help('outbound-acl','Add and Remove require port and network arguments')
+            return
+        else:
+            if check_network(network):
+                network_list = []
+                network_list.append(network)
+            else:
+                print_help("outbound-acl","Improperly Formatted CIDR Network. Example: 8.8.8.8/32")
+                return
+            if action == 'add':
+                api_endpoint = splunk_url_base+"/adminconfig/v2/access/outbound-ports"
+                outbound_ports = []
+                outbound_ports.append({'subnets':network_list,'port':int(port)})
+                post_data = {'outboundPorts':outbound_ports}
+                splunk_post(api_endpoint,post_data)
+            elif action == 'remove':
+                api_endpoint = splunk_url_base+"/adminconfig/v2/access/outbound-ports/"+port
+                post_data = {'subnets':network_list}
+                splunk_delete(api_endpoint,post_data)
+            else:
+                print_help('outbound-acl')
+        
+    else:
+        print_help('outbound-acl')
 
 def command_tokens(subcommand=None,action=None,extra1=None,extra2=None):
-    # Reference: https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageAuthtokens
-
     api_endpoint = splunk_url_base+"/adminconfig/v2/tokens"
     if subcommand == "show":
         splunk_get(api_endpoint)
@@ -178,11 +210,21 @@ def splunk_post(u=None,d=None):
 
     json_data=json.dumps(d)
     r = requests.post(u, data=json_data, headers=headers)
+    if r.status_code in [200,202]:
+        print("(Status Code: "+str(r.status_code)+" Execution Successful)")
+    else:
+        print("(Status Code: "+str(r.status_code)+" Execution Failed)")
+    print()
     print_json(r.text)
 
 def splunk_delete(u=None,d=None):
     json_data=json.dumps(d)
     r = requests.delete(u, data=json_data, headers=headers)
+    if r.status_code in [200,202]:
+        print("(Status Code: "+str(r.status_code)+" Execution Successful)")
+    else:
+        print("(Status Code: "+str(r.status_code)+" Execution Failed)")
+    print()
     print_json(r.text)
 
 def check_network(network):
@@ -203,15 +245,21 @@ def check_network(network):
         return None
 
 ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the function names can be included in the dictionary to allow for dynamic execution according to user input
-    'acl' : {
-        'description' : 'Manage Splunk Cloud IP access-lists',
-        'help'        : 'splunkacs acl [feature] (show|add|remove) <cidr network>\n\nSplunk ACL Features:\nidm-api, idm-ui, hec, s2s, search-api, search-ui',
-        'function'    : command_acl,
+    'inbound-acl' : {
+        'description' : 'Manage Splunk Cloud IP inbound access-lists',
+        'help'        : 'splunkacs inbound-acl {show|add|remove} <feature> [cidr network]\n\nSplunk ACL Features:\nidm-api, idm-ui, hec, s2s, search-api, search-ui',
+        'function'    : command_inbound_acl,
+
+    },
+    'outbound-acl' : {
+        'description' : 'Manage Splunk Cloud IP outbound access-lists',
+        'help'        : 'splunkacs outbound-acl {show|add|remove} [port] [cidr network]',
+        'function'    : command_outbound_acl,
 
     },
     'tokens' : {
         'description' : 'View active Splunk Cloud Authentication Tokens',
-        'help'        : 'splunkacs tokens (show)',
+        'help'        : 'splunkacs tokens {show}',
         'function'    : command_tokens,
     },
     'settings' : {
@@ -226,12 +274,12 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
     },
     'limits' :{
         'description' : 'Manage the limtis.conf settings of Splunk Cloud',
-        'help'        : 'splunkacs limits (defaults|set|show) <stanza> <setting> <value>\n\ndefaults\tDisplays default limits.conf settings\nset\t\tModify the Splunk Cloud limits. Requires a Stanza, Setting, and Value\nshow\t\tDisplays the current limits.conf settings\n\nFor information on Stanzas and Settings run \'splunkacs limits defaults\' or go to https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits',
+        'help'        : 'splunkacs limits {defaults|set|show} [stanza] [setting] [value]\n\ndefaults\tDisplays default limits.conf settings\nset\t\tModify the Splunk Cloud limits. Requires a Stanza, Setting, and Value\nshow\t\tDisplays the current limits.conf settings\n\nFor information on Stanzas and Settings run \'splunkacs limits defaults\' or go to https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits',
         'function'    : command_limits,
     },
     'maintenance' :{
         'description' : 'View previous and upcoming maintance windows',
-        'help'        : 'splunkacs maintenance (show) <From Date> <To Date>\n\nDate Format: YYYY-MM-DD',
+        'help'        : 'splunkacs maintenance {show} [From Date] [To Date]\n\nDate Format: YYYY-MM-DD',
         'function'    : command_maintenance,
     },
 }
