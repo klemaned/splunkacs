@@ -163,6 +163,18 @@ def command_maintenance(subcommand=None,from_time=None,to_time=None,extra1=None)
     else:
         print_help("maintenance")
             
+def command_restart(action=None,extra1=None,extra2=None,extra3=None):
+    #api same for single instance and search head clusters
+    if action == 'status':
+        api_endpoint=splunk_url_base+"/adminconfig/v2/status" # Restart Status
+        splunk_get(api_endpoint)
+    elif action == 'restart-now':
+        api_endpoint=splunk_url_base+"/adminconfig/v2/restart-now" # Issue restart
+        post_data = {}
+        splunk_post(api_endpoint,post_data)
+    else:
+        print_help('restart')
+
 def get_config():
     config = configparser.ConfigParser()
     config.read(CONFIG_FILE)
@@ -281,6 +293,11 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
         'description' : 'View previous and upcoming maintance windows',
         'help'        : 'splunkacs maintenance {show} [From Date] [To Date]\n\nDate Format: YYYY-MM-DD',
         'function'    : command_maintenance,
+    },
+    'restart' :{
+        'description' : 'View status and issue restarts',
+        'help'        : 'splunkacs restart {status|restart-now}',
+        'function'    : command_restart,
     },
 }
 
