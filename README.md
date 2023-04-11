@@ -241,7 +241,7 @@ $ ./splunkacs tokens show
     "expiresOn": "2023-02-02T14:03:17Z",
     "notBefore": "2023-01-03T14:03:17Z",
     "lastUsed": "2023-01-27T14:12:43Z",
-    "lastUsedIP": "[redated]"
+    "lastUsedIP": "[redacted]"
   }
 ]
 ```
