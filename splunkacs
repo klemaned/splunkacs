@@ -308,7 +308,7 @@ ACS_COMMANDS = { # ACS_COMMANDS must be defined after functions so that the func
     },
     'system-status' :{
         'description' : 'Check the status of a Splunk Cloud instance',
-        'help'        : 'splunkacs system system-status',
+        'help'        : 'splunkacs system-status',
         'function'    : command_status,
     },
 }

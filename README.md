@@ -218,6 +218,48 @@ $ ./splunkacs maintenance show 2023-01-01 2023-04-10
 }
 ```
 
+## Restart
+The `restart` command allows an admin to initiate a new service restart or view the progess of an existing service restart.
+> Restart `status` is only available for Search Head Cluseters.
+```
+$ ./splunkacs restart help
+
+Command: restart
+Description: View status and issue restarts
+
+Format:
+splunkacs restart {status|restart-now}
+```
+> Please be aware that selecting `restart-now` will result in an immediate restart an your Splunk Cloud instance may be unavailable for 3-5 minutes.
+
+## System-status
+The `system-status` command will display basic instance information such as Version and whether a restart is required.
+```
+$ ./splunkacs system-status help
+
+Command: system-status
+Description: Check the status of a Splunk Cloud instance
+
+Format:
+splunkacs system-status
+```
+
+### Example uses:
+#### Show Splunk Cloud Status
+```
+$ ./splunkacs system-status
+
+{
+  "infrastructure": {
+    "stackType": "victoria",
+    "stackVersion": "9.0.2209.4",
+    "status": "Ready"
+  },
+  "messages": {
+    "restartRequired": false
+  }
+}
+```
 
 ## Tokens
 The `tokens` command allows an admin to view all configured authentication tokens. The command does not enable an admin to view the actual tokens, only the tokens properties.
