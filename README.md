@@ -1,8 +1,14 @@
+
+
+# Notice!
+After nearly completing this project for my use-cases, I've come across the Splunk developed option [acs-cli](https://github.com/splunk/acs-cli). While the code for the project is not openly available, I've tried the package out and it seems to be somewhat similar to this project but more complete, and without question will be better maintained. That said, I will leave this project here for my own benefit and for the benefit of anyone else that can find some use from it.
+
+
+
 # splunkacs
 A Command for managing the Splunk Cloud Admin Config Service (ACS).
 
 Functionality is confirmed for the [Victoria Experience](https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Admin/Experience) only.
-
 ## Getting Started
 - Make sure Python3 is installed and clone the repository.
 - Running `./splunkacs help` will return a list of command options.
@@ -17,9 +23,7 @@ For the Authentication Token, using the Splunk Cloud web portal, you will need t
 
 # Commands
 Functionality yet to be included:
-- [ ] View maintenance windows
 - [ ] Splunk restarts
-- [ ] Outbound Ports
 
 Functionality of `splunkacs` is focused on the activities that you cannot perform within the web portal such as IP Access Lists, but some functionality is included for the purposes of testing and convenience. Below is a list of available commands.
 
@@ -144,8 +148,79 @@ $ ./splunkacs limits set pdf max_rows_per_table 2000
 ```
 A list of available Stanzas and Settings can be found [here](https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Config/ManageLimits)
 
+## Maintenance
+The `maintenance` command displays previous and upcoming maintenace for a given period of time.
+> If no "From Date" is provided, the command will default to a window of +-30 days. If a "From Date" is provided but no "To Date" is given, the "To Date" will be set to today's date.
+
+```
+$ ./splunkacs maintenance help
+
+Command: maintenance
+Description: View previous and upcoming maintance windows
+
+Format:
+splunkacs maintenance (show) <From Date> <To Date>
+
+Date Format: YYYY-MM-DD
+```
+
+### Example Uses:
+#### Show Maintenance during default +-30 day window
+```
+$ ./splunkacs maintenance show
+
+{
+  "nextLink": "",
+  "schedules": []
+}
+```
+> There are no scheduled maintenance for the default window
+
+
+#### Show Maintenance from 2023-01-01 to 2023-04-10 
+```
+$ ./splunkacs maintenance show 2023-01-01 2023-04-10
+
+{
+  "nextLink": "",
+  "schedules": [
+    {
+      "duration": "3h0m0s",
+      "lastModifiedTimestamp": "2023-03-11T02:07:54.485060828Z",
+      "lastSummary": "",
+      "mwType": "Service Update",
+      "operations": [
+        {
+          "operationDescription": "Splunk version upgrade to latest/stable release",
+          "operationStatus": "Success",
+          "operationType": "Splunk Upgrade",
+          "targetVersion": "9.0.2209.4"
+        },
+        {
+          "SFDCTickets": [
+            "1"
+          ],
+          "notes": [
+            "8"
+          ],
+          "operationDescription": "Rightsize Stack",
+          "operationStatus": "Success",
+          "operationType": "Repaver",
+          "targetVersion": "m6i.4xlarge"
+        }
+      ],
+      "requestedEntity": "Splunk",
+      "scheduleId": "56fb3ca2-88c5-4f4e-8b7e-45821a38a2ce",
+      "scheduleStartTimestamp": "2023-03-10T04:00:00Z",
+      "status": "Completed"
+    }
+  ]
+}
+```
+
+
 ## Tokens
-The `tokens` command allow an admin to view all configured authentication tokens. The command does not enable an admin to view the actual tokens, only the tokens properties.
+The `tokens` command allows an admin to view all configured authentication tokens. The command does not enable an admin to view the actual tokens, only the tokens properties.
 > Creating and Deleting tokens is not currently supported by splunkacs. Use the Splunk web portal for token management.
 ```
 $ ./splunkacs tokens help
@@ -170,7 +245,7 @@ $ ./splunkacs tokens show
     "expiresOn": "2023-02-02T14:03:17Z",
     "notBefore": "2023-01-03T14:03:17Z",
     "lastUsed": "2023-01-27T14:12:43Z",
-    "lastUsedIP": "[redated]"
+    "lastUsedIP": "[redacted]"
   }
 ]
 ```
