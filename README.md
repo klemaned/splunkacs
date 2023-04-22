@@ -1,12 +1,13 @@
-# splunkacs
-A Command for managing the Splunk Cloud Admin Config Service (ACS).
+
 
 # Notice!
 After nearly completing this project for my use-cases, I've come across the Splunk developed option [acs-cli](https://github.com/splunk/acs-cli). While the code for the project is not openly available, I've tried the package out and it seems to be somewhat similar to this project but more complete, and without question will be better maintained. That said, I will leave this project here for my own benefit and for the benefit of anyone else that can find some use from it.
 
 
 
-# splunkacs Documentation
+# splunkacs
+A Command for managing the Splunk Cloud Admin Config Service (ACS).
+
 Functionality is confirmed for the [Victoria Experience](https://docs.splunk.com/Documentation/SplunkCloud/9.0.2209/Admin/Experience) only.
 ## Getting Started
 - Make sure Python3 is installed and clone the repository.
